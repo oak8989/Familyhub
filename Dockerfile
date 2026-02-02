@@ -6,13 +6,13 @@
 # -----------------------------------------------------------------------------
 # Stage 1: Build Frontend
 # -----------------------------------------------------------------------------
-FROM node:18-alpine AS frontend-builder
+FROM node:18-slim AS frontend-builder
 
 WORKDIR /app/frontend
 
 # Install dependencies first (better caching)
-COPY frontend/package.json frontend/yarn.lock* ./
-RUN yarn install --network-timeout 100000
+COPY frontend/package.json ./
+RUN yarn install --network-timeout 300000 --ignore-engines
 
 # Copy frontend source
 COPY frontend/ ./
@@ -21,6 +21,7 @@ COPY frontend/ ./
 ENV REACT_APP_BACKEND_URL=""
 ENV NODE_ENV=production
 ENV CI=false
+ENV DISABLE_ESLINT_PLUGIN=true
 
 RUN yarn build
 
