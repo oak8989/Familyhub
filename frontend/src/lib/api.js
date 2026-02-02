@@ -1,12 +1,18 @@
 import axios from 'axios';
 
-// Get API URL - check localStorage for custom server first, then fallback to env
+// Get API URL - check localStorage for custom server first, then fallback to env or same origin
 const getApiUrl = () => {
   const customServer = localStorage.getItem('customServerUrl');
   if (customServer) {
     return customServer + '/api';
   }
-  return process.env.REACT_APP_BACKEND_URL + '/api';
+  // If REACT_APP_BACKEND_URL is empty or not set, use same origin (for Docker deployment)
+  const envUrl = process.env.REACT_APP_BACKEND_URL;
+  if (envUrl) {
+    return envUrl + '/api';
+  }
+  // Same origin - for production Docker deployment
+  return '/api';
 };
 
 const api = axios.create({
@@ -23,7 +29,8 @@ export const setCustomServer = (url) => {
     api.defaults.baseURL = url + '/api';
   } else {
     localStorage.removeItem('customServerUrl');
-    api.defaults.baseURL = process.env.REACT_APP_BACKEND_URL + '/api';
+    const envUrl = process.env.REACT_APP_BACKEND_URL;
+    api.defaults.baseURL = envUrl ? envUrl + '/api' : '/api';
   }
 };
 
