@@ -1,14 +1,11 @@
 version: '3.8'
 
 services:
-  # =============================================================================
+  # ==========================================================================
   # Family Hub Application
-  # =============================================================================
+  # ==========================================================================
   family-hub:
-    image: ghcr.io/yourusername/family-hub:latest
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     container_name: family-hub
     restart: unless-stopped
     ports:
@@ -24,17 +21,11 @@ services:
       mongo:
         condition: service_healthy
     networks:
-      - family-hub-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+      - family-network
 
-  # =============================================================================
+  # ==========================================================================
   # MongoDB Database
-  # =============================================================================
+  # ==========================================================================
   mongo:
     image: mongo:7
     container_name: family-hub-mongo
@@ -42,27 +33,24 @@ services:
     volumes:
       - mongo-data:/data/db
     networks:
-      - family-hub-network
+      - family-network
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 20s
 
-# =============================================================================
-# Volumes for Data Persistence
-# =============================================================================
+# ==========================================================================
+# Volumes
+# ==========================================================================
 volumes:
   mongo-data:
-    name: family-hub-mongo-data
   photos-data:
-    name: family-hub-photos
 
-# =============================================================================
-# Network
-# =============================================================================
+# ==========================================================================
+# Networks
+# ==========================================================================
 networks:
-  family-hub-network:
-    name: family-hub-network
+  family-network:
     driver: bridge
