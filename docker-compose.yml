@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  family-hub:
+    build: .
+    container_name: family-hub
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - MONGO_URL=mongodb://mongo:27017
+      - DB_NAME=family_hub
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
+      - CORS_ORIGINS=*
+    volumes:
+      - photos-data:/app/backend/photos
+    depends_on:
+      - mongo
+    networks:
+      - family-hub-network
+
+  mongo:
+    image: mongo:7
+    container_name: family-hub-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - family-hub-network
+
+volumes:
+  mongo-data:
+  photos-data:
+
+networks:
+  family-hub-network:
+    driver: bridge
