@@ -236,6 +236,28 @@ yarn start
 
 MIT License - feel free to use, modify, and distribute!
 
+## 🤖 Android App
+
+### Download Pre-built APK
+
+Download the latest APK from [Releases](https://github.com/yourusername/family-hub/releases/latest).
+
+### Build Your Own APK
+
+See [ANDROID_BUILD.md](ANDROID_BUILD.md) for detailed instructions.
+
+Quick build:
+```bash
+cd frontend
+yarn install
+yarn build
+npx cap sync android
+cd android
+./gradlew assembleDebug
+```
+
+APK will be at: `frontend/android/app/build/outputs/apk/debug/app-debug.apk`
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
