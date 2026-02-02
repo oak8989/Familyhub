@@ -1,23 +1,25 @@
-# Dependencies
+# =============================================================================
+# Family Hub - Docker Ignore
+# =============================================================================
+
+# Git
+.git/
+.gitignore
+
+# Dependencies (will be installed in container)
 node_modules/
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
 venv/
-.env
-*.egg-info/
+.venv/
+
+# Build artifacts (will be built in container)
+frontend/build/
 dist/
-build/
-*.egg
 
 # IDE
 .idea/
 .vscode/
 *.swp
-*.swo
 
 # OS
 .DS_Store
@@ -26,38 +28,36 @@ Thumbs.db
 # Logs
 *.log
 logs/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
 # Testing
 coverage/
-.coverage
-htmlcov/
 .pytest_cache/
 test_reports/
 
-# Build artifacts
-frontend/build/
-frontend/.cache/
-
-# Git
-.git/
-.gitignore
-
-# Docker
+# Docker files (don't need to copy themselves)
 Dockerfile*
 docker-compose*.yml
-.docker/
+.dockerignore
 
-# Documentation (keep README)
+# Documentation (except README)
 *.md
 !README.md
+!ANDROID_BUILD.md
+
+# Environment (use runtime env vars)
+.env
+.env.*
+!.env.example
+backend/.env
+frontend/.env
+
+# Android (not needed for Docker)
+frontend/android/
 
 # Misc
-.env*
-!.env.example
 *.bak
 *.tmp
 .emergent/
 memory/
+cliff.toml
+LICENSE
