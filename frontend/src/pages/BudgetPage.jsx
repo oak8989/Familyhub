@@ -7,23 +7,19 @@ import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 
-const categories = {
-  income: ['Salary', 'Freelance', 'Investments', 'Gifts', 'Other Income'],
-  expense: ['Groceries', 'Utilities', 'Rent', 'Transportation', 'Entertainment', 'Healthcare', 'Education', 'Shopping', 'Dining', 'Other']
-};
+const incomeCategories = ['Salary', 'Freelance', 'Investments', 'Gifts', 'Other Income'];
+const expenseCategories = ['Groceries', 'Utilities', 'Rent', 'Transportation', 'Entertainment', 'Healthcare', 'Education', 'Shopping', 'Dining', 'Other'];
 
 const BudgetPage = () => {
   const [entries, setEntries] = useState([]);
   const [summary, setSummary] = useState({ income: 0, expenses: 0, balance: 0 });
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState({
-    description: '',
-    amount: '',
-    category: '',
-    type: 'expense',
-    date: new Date().toISOString().split('T')[0]
-  });
+  const [formType, setFormType] = useState('expense');
+  const [formDescription, setFormDescription] = useState('');
+  const [formAmount, setFormAmount] = useState('');
+  const [formCategory, setFormCategory] = useState('');
+  const [formDate, setFormDate] = useState(new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
     loadData();
@@ -31,10 +27,8 @@ const BudgetPage = () => {
 
   const loadData = async () => {
     try {
-      const [entriesRes, summaryRes] = await Promise.all([
-        budgetAPI.getEntries(),
-        budgetAPI.getSummary()
-      ]);
+      const entriesRes = await budgetAPI.getEntries();
+      const summaryRes = await budgetAPI.getSummary();
       setEntries(entriesRes.data);
       setSummary(summaryRes.data);
     } catch (error) {
@@ -45,29 +39,33 @@ const BudgetPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.description.trim() || !form.amount) {
+    if (!formDescription.trim() || !formAmount) {
       toast.error('Please fill all required fields');
       return;
     }
 
     try {
       await budgetAPI.createEntry({
-        ...form,
-        amount: parseFloat(form.amount)
+        description: formDescription,
+        amount: parseFloat(formAmount),
+        category: formCategory,
+        type: formType,
+        date: formDate
       });
       toast.success('Entry added!');
       setDialogOpen(false);
-      setForm({
-        description: '',
-        amount: '',
-        category: '',
-        type: 'expense',
-        date: new Date().toISOString().split('T')[0]
-      });
+      resetForm();
       loadData();
     } catch (error) {
       toast.error('Failed to add entry');
     }
+  };
+
+  const resetForm = () => {
+    setFormDescription('');
+    setFormAmount('');
+    setFormCategory('');
+    setFormDate(new Date().toISOString().split('T')[0]);
   };
 
   const handleDelete = async (id) => {
@@ -80,13 +78,7 @@ const BudgetPage = () => {
     }
   };
 
-  // Group entries by month
-  const groupedEntries = entries.reduce((acc, entry) => {
-    const month = entry.date.substring(0, 7);
-    if (!acc[month]) acc[month] = [];
-    acc[month].push(entry);
-    return acc;
-  }, {});
+  const currentCategories = formType === 'income' ? incomeCategories : expenseCategories;
 
   return (
     <div className="space-y-6" data-testid="budget-page">
@@ -114,9 +106,9 @@ const BudgetPage = () => {
               <div className="grid grid-cols-2 gap-2 p-1 bg-cream rounded-lg">
                 <button
                   type="button"
-                  onClick={() => setForm({ ...form, type: 'income', category: '' })}
+                  onClick={() => { setFormType('income'); setFormCategory(''); }}
                   className={`flex items-center justify-center gap-2 py-2 px-4 rounded-md font-medium transition-colors ${
-                    form.type === 'income' ? 'bg-green-500 text-white' : 'text-navy-light hover:bg-sunny/30'
+                    formType === 'income' ? 'bg-green-500 text-white' : 'text-navy-light hover:bg-sunny/30'
                   }`}
                 >
                   <TrendingUp className="w-4 h-4" />
@@ -124,9 +116,9 @@ const BudgetPage = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setForm({ ...form, type: 'expense', category: '' })}
+                  onClick={() => { setFormType('expense'); setFormCategory(''); }}
                   className={`flex items-center justify-center gap-2 py-2 px-4 rounded-md font-medium transition-colors ${
-                    form.type === 'expense' ? 'bg-terracotta text-white' : 'text-navy-light hover:bg-sunny/30'
+                    formType === 'expense' ? 'bg-terracotta text-white' : 'text-navy-light hover:bg-sunny/30'
                   }`}
                 >
                   <TrendingDown className="w-4 h-4" />
@@ -137,8 +129,8 @@ const BudgetPage = () => {
               <div>
                 <label className="block text-sm font-medium text-navy mb-2">Description</label>
                 <Input
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
                   placeholder="What was it for?"
                   className="input-cozy"
                   data-testid="budget-description-input"
@@ -151,8 +143,8 @@ const BudgetPage = () => {
                   <Input
                     type="number"
                     step="0.01"
-                    value={form.amount}
-                    onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                    value={formAmount}
+                    onChange={(e) => setFormAmount(e.target.value)}
                     placeholder="0.00"
                     className="input-cozy"
                     data-testid="budget-amount-input"
@@ -160,12 +152,12 @@ const BudgetPage = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-navy mb-2">Category</label>
-                  <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+                  <Select value={formCategory} onValueChange={setFormCategory}>
                     <SelectTrigger className="input-cozy" data-testid="budget-category-select">
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories[form.type].map(cat => (
+                      {currentCategories.map(cat => (
                         <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                       ))}
                     </SelectContent>
@@ -177,8 +169,8 @@ const BudgetPage = () => {
                 <label className="block text-sm font-medium text-navy mb-2">Date</label>
                 <Input
                   type="date"
-                  value={form.date}
-                  onChange={(e) => setForm({ ...form, date: e.target.value })}
+                  value={formDate}
+                  onChange={(e) => setFormDate(e.target.value)}
                   className="input-cozy"
                   data-testid="budget-date-input"
                 />
@@ -254,55 +246,47 @@ const BudgetPage = () => {
           <p className="text-navy-light font-handwritten text-lg">Start tracking your budget!</p>
         </div>
       ) : (
-        <div className="space-y-6">
-          {Object.entries(groupedEntries)
-            .sort(([a], [b]) => b.localeCompare(a))
-            .map(([month, monthEntries]) => (
-              <div key={month} className="card-cozy">
-                <h2 className="font-heading font-bold text-navy mb-4">
-                  {new Date(month + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                </h2>
-                <div className="space-y-2">
-                  {monthEntries.sort((a, b) => b.date.localeCompare(a.date)).map((entry) => (
-                    <div
-                      key={entry.id}
-                      className={`flex items-center gap-4 p-3 rounded-xl ${
-                        entry.type === 'income' ? 'bg-green-50' : 'bg-red-50'
-                      } group`}
-                      data-testid={`budget-entry-${entry.id}`}
-                    >
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                        entry.type === 'income' ? 'bg-green-100' : 'bg-red-100'
-                      }`}>
-                        {entry.type === 'income' ? (
-                          <TrendingUp className="w-5 h-5 text-green-600" />
-                        ) : (
-                          <TrendingDown className="w-5 h-5 text-red-500" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-navy">{entry.description}</p>
-                        <p className="text-sm text-navy-light">
-                          {entry.category} • {entry.date}
-                        </p>
-                      </div>
-                      <p className={`font-heading font-bold ${
-                        entry.type === 'income' ? 'text-green-600' : 'text-red-500'
-                      }`}>
-                        {entry.type === 'income' ? '+' : '-'}${entry.amount.toFixed(2)}
-                      </p>
-                      <button
-                        onClick={() => handleDelete(entry.id)}
-                        className="p-2 hover:bg-white/50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                        data-testid={`delete-budget-${entry.id}`}
-                      >
-                        <Trash2 className="w-4 h-4 text-red-500" />
-                      </button>
-                    </div>
-                  ))}
+        <div className="card-cozy">
+          <h2 className="font-heading font-bold text-navy mb-4">Recent Transactions</h2>
+          <div className="space-y-2">
+            {entries.sort((a, b) => b.date.localeCompare(a.date)).map((entry) => (
+              <div
+                key={entry.id}
+                className={`flex items-center gap-4 p-3 rounded-xl ${
+                  entry.type === 'income' ? 'bg-green-50' : 'bg-red-50'
+                } group`}
+                data-testid={`budget-entry-${entry.id}`}
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  entry.type === 'income' ? 'bg-green-100' : 'bg-red-100'
+                }`}>
+                  {entry.type === 'income' ? (
+                    <TrendingUp className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <TrendingDown className="w-5 h-5 text-red-500" />
+                  )}
                 </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-navy">{entry.description}</p>
+                  <p className="text-sm text-navy-light">
+                    {entry.category} • {entry.date}
+                  </p>
+                </div>
+                <p className={`font-heading font-bold ${
+                  entry.type === 'income' ? 'text-green-600' : 'text-red-500'
+                }`}>
+                  {entry.type === 'income' ? '+' : '-'}${entry.amount.toFixed(2)}
+                </p>
+                <button
+                  onClick={() => handleDelete(entry.id)}
+                  className="p-2 hover:bg-white/50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                  data-testid={`delete-budget-${entry.id}`}
+                >
+                  <Trash2 className="w-4 h-4 text-red-500" />
+                </button>
               </div>
             ))}
+          </div>
         </div>
       )}
     </div>
