@@ -5,7 +5,7 @@
   <img src="https://img.shields.io/badge/Android-APK-green?logo=android" alt="Android APK">
   <img src="https://img.shields.io/badge/Self--Hosted-Yes-green" alt="Self-Hosted">
   <img src="https://img.shields.io/badge/License-MIT-yellow" alt="MIT License">
-  <img src="https://img.shields.io/github/v/release/yourusername/family-hub?include_prereleases" alt="Release">
+  <img src="https://img.shields.io/github/v/release/oakguy93/family-hub?include_prereleases" alt="Release">
 </p>
 
 <p align="center">
@@ -20,7 +20,7 @@
 | Platform | Download |
 |----------|----------|
 | 🌐 **Web/PWA** | [Self-host with Docker](#-quick-start) |
-| 🤖 **Android** | [Download APK](https://github.com/yourusername/family-hub/releases/latest) |
+| 🤖 **Android** | [Download APK](https://github.com/oakguy93/family-hub/releases/latest) |
 | 🍎 **iOS** | Use Safari "Add to Home Screen" |
 
 ## ✨ Features
@@ -47,7 +47,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/family-hub.git
+git clone https://github.com/oakguy93/family-hub.git
 cd family-hub
 
 # Configure environment
@@ -68,7 +68,7 @@ cat > docker-compose.yml << 'EOF'
 version: '3.8'
 services:
   family-hub:
-    image: ghcr.io/yourusername/family-hub:latest
+    image: ghcr.io/oakguy93/family-hub:latest
     ports:
       - "8001:8001"
     environment:
@@ -216,7 +216,7 @@ docker cp ./photos-backup-20240101/. family-hub:/app/backend/photos/
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/family-hub.git
+git clone https://github.com/oakguy93/family-hub.git
 cd family-hub
 
 # Backend
@@ -240,7 +240,7 @@ MIT License - feel free to use, modify, and distribute!
 
 ### Download Pre-built APK
 
-Download the latest APK from [Releases](https://github.com/yourusername/family-hub/releases/latest).
+Download the latest APK from [Releases](https://github.com/oakguy93/family-hub/releases/latest).
 
 ### Build Your Own APK
 
