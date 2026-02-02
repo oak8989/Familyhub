@@ -16,10 +16,8 @@ dist/
 # Environment files (keep example)
 .env
 .env.local
-.env.*.local
 backend/.env
 frontend/.env
-!.env.example
 
 # IDE
 .idea/
@@ -57,7 +55,3 @@ frontend/android/.gradle/
 *.aab
 frontend/node_modules/.cache/default-development/6.pack
 frontend/node_modules/.cache/default-development/0.pack
--e 
-# Environment files
-*.env
-*.env.*
