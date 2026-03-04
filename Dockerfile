@@ -36,7 +36,7 @@ FROM python:3.11-slim AS production
 
 LABEL org.opencontainers.image.title="Family Hub"
 LABEL org.opencontainers.image.description="Self-hosted family organization app"
-LABEL org.opencontainers.image.source="https://github.com/oakguy93/family-hub"
+LABEL org.opencontainers.image.source="https://github.com/oak8989/family-hub"
 LABEL org.opencontainers.image.licenses="MIT"
 
 WORKDIR /app

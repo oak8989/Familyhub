@@ -51,8 +51,8 @@ Build a family app with: shared calendar, shopping list, task list, shared notes
 - **Android APK Scaffolding** - Capacitor integration ready
 
 ### Configuration Complete (Dec 2025)
-- GitHub username set to `oakguy93` across all repository files
-- Docker image publishes to `ghcr.io/oakguy93/family-hub`
+- GitHub username set to `oak8989` across all repository files
+- Docker image publishes to `ghcr.io/oak8989/family-hub`
 - README badges and links configured correctly
 
 ### Technical Implementation

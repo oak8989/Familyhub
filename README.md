@@ -44,7 +44,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/oakguy93/family-hub.git
+git clone https://github.com/oak8989/family-hub.git
 cd family-hub
 
 # Configure environment
@@ -65,7 +65,7 @@ cat > docker-compose.yml << 'EOF'
 version: '3.8'
 services:
   family-hub:
-    image: ghcr.io/oakguy93/family-hub:latest
+    image: ghcr.io/oak8989/family-hub:latest
     ports:
       - "8001:8001"
     environment:
@@ -213,7 +213,7 @@ docker cp ./photos-backup-20240101/. family-hub:/app/backend/photos/
 
 ```bash
 # Clone repository
-git clone https://github.com/oakguy93/family-hub.git
+git clone https://github.com/oak8989/family-hub.git
 cd family-hub
 
 # Backend
