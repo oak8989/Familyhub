@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  Home, Calendar, ShoppingCart, CheckSquare, FileText, MessageCircle,
-  DollarSign, Utensils, BookOpen, List, Users, Image, Package, Lightbulb,
-  Menu, X, LogOut, ChevronRight
+  Home, Calendar, ShoppingCart, CheckSquare, FileText,
+  DollarSign, Utensils, BookOpen, List, Users, Package, Lightbulb,
+  Menu, X, LogOut, ChevronRight, Settings, Award
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { Button } from '../components/ui/button';
@@ -15,16 +15,16 @@ const navItems = [
   { path: '/calendar', icon: Calendar, label: 'Calendar' },
   { path: '/shopping', icon: ShoppingCart, label: 'Shopping List' },
   { path: '/tasks', icon: CheckSquare, label: 'Tasks' },
+  { path: '/chores', icon: Award, label: 'Chores & Rewards' },
   { path: '/notes', icon: FileText, label: 'Notes' },
-  { path: '/messages', icon: MessageCircle, label: 'Messages' },
   { path: '/budget', icon: DollarSign, label: 'Budget' },
   { path: '/meals', icon: Utensils, label: 'Meal Planner' },
   { path: '/recipes', icon: BookOpen, label: 'Recipe Box' },
   { path: '/grocery', icon: List, label: 'Grocery List' },
   { path: '/contacts', icon: Users, label: 'Contacts' },
-  { path: '/photos', icon: Image, label: 'Photos' },
   { path: '/pantry', icon: Package, label: 'Pantry' },
   { path: '/suggestions', icon: Lightbulb, label: 'Meal Ideas' },
+  { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 
 const Layout = ({ children }) => {
@@ -106,7 +106,7 @@ const Layout = ({ children }) => {
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-navy truncate">{user?.name || 'Family Member'}</p>
-                <p className="text-xs text-navy-light truncate">{user?.email || 'Guest'}</p>
+                <p className="text-xs text-navy-light truncate capitalize">{user?.role || 'member'} • {user?.points || 0} pts</p>
               </div>
             </div>
             <Button
@@ -140,7 +140,7 @@ const Layout = ({ children }) => {
       {/* Mobile bottom navigation */}
       <nav className="mobile-nav lg:hidden">
         <div className="flex justify-around py-2">
-          {navItems.slice(0, 5).map((item) => {
+          {[navItems[0], navItems[1], navItems[4], navItems[6], navItems[13]].map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             return (
