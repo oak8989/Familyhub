@@ -2,10 +2,8 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Docker-Ready-blue?logo=docker" alt="Docker Ready">
-  <img src="https://img.shields.io/badge/Android-APK-green?logo=android" alt="Android APK">
   <img src="https://img.shields.io/badge/Self--Hosted-Yes-green" alt="Self-Hosted">
   <img src="https://img.shields.io/badge/License-MIT-yellow" alt="MIT License">
-  <img src="https://img.shields.io/github/v/release/oakguy93/family-hub?include_prereleases" alt="Release">
 </p>
 
 <p align="center">
@@ -15,13 +13,12 @@
 
 ---
 
-## 📥 Download
+## 📥 Get Started
 
-| Platform | Download |
-|----------|----------|
-| 🌐 **Web/PWA** | [Self-host with Docker](#-quick-start) |
-| 🤖 **Android** | [Download APK](https://github.com/oakguy93/family-hub/releases/latest) |
-| 🍎 **iOS** | Use Safari "Add to Home Screen" |
+| Platform | How to Access |
+|----------|---------------|
+| 🌐 **Web** | [Self-host with Docker](#-quick-start) |
+| 📱 **Mobile** | Add to Home Screen (PWA) |
 
 ## ✨ Features
 
@@ -235,28 +232,6 @@ yarn start
 ## 📄 License
 
 MIT License - feel free to use, modify, and distribute!
-
-## 🤖 Android App
-
-### Download Pre-built APK
-
-Download the latest APK from [Releases](https://github.com/oakguy93/family-hub/releases/latest).
-
-### Build Your Own APK
-
-See [ANDROID_BUILD.md](ANDROID_BUILD.md) for detailed instructions.
-
-Quick build:
-```bash
-cd frontend
-yarn install
-yarn build
-npx cap sync android
-cd android
-./gradlew assembleDebug
-```
-
-APK will be at: `frontend/android/app/build/outputs/apk/debug/app-debug.apk`
 
 ## 🤝 Contributing
 
