@@ -481,7 +481,43 @@ async def invite_member(invite: UserInvite, user: dict = Depends(get_current_use
     """
     await send_email(invite.email, f"You're invited to {family['name']} - Family Hub", email_html)
     
-    return {"message": "Invitation sent", "user_id": new_user["id"], "user_pin": user_pin}
+    return {"message": "Invitation sent", "user_id": new_user["id"], "user_pin": user_pin, "temp_password": temp_password}
+
+class QuickAddMember(BaseModel):
+    name: str
+    role: str = "member"
+
+@api_router.post("/family/add-member")
+async def quick_add_member(member: QuickAddMember, user: dict = Depends(get_current_user)):
+    """Add a family member without email - just creates a PIN for them to login"""
+    user_data = await db.users.find_one({"id": user["user_id"]}, {"_id": 0})
+    if user_data.get("role") not in ["owner", "parent"]:
+        raise HTTPException(status_code=403, detail="Not authorized to add members")
+    
+    user_pin = generate_user_pin()
+    
+    new_user = {
+        "id": str(uuid.uuid4()),
+        "name": member.name,
+        "email": None,
+        "password": None,
+        "role": member.role,
+        "user_pin": user_pin,
+        "avatar_seed": str(uuid.uuid4()),
+        "family_id": user["family_id"],
+        "points": 0,
+        "added_by": user["user_id"],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.users.insert_one(new_user)
+    
+    return {
+        "message": f"{member.name} added to family!", 
+        "user_id": new_user["id"], 
+        "user_pin": user_pin,
+        "name": member.name,
+        "role": member.role
+    }
 
 @api_router.put("/family/members/{member_id}/role")
 async def update_member_role(member_id: str, role_update: UserRoleUpdate, user: dict = Depends(get_current_user)):
