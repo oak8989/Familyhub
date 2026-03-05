@@ -1,9 +1,17 @@
-version: '3.8'
+# =============================================================================
+# Family Hub - Docker Compose Configuration
+# Self-contained deployment with MongoDB embedded
+# =============================================================================
+#
+# Quick Start:
+#   1. Copy this file to your server
+#   2. Change JWT_SECRET to a secure random string
+#   3. Run: docker-compose up -d
+#   4. Access: http://localhost:8001
+#
+# =============================================================================
 
-# =============================================================================
-# Family Hub - Self-Contained Deployment
-# Single container with MongoDB included
-# =============================================================================
+version: '3.8'
 
 services:
   family-hub:
@@ -12,24 +20,32 @@ services:
     ports:
       - "8001:8001"
     volumes:
-      # Persistent data storage
+      # Database persistence - DO NOT REMOVE
       - family-hub-data:/data/db
-      - family-hub-photos:/app/backend/photos
     environment:
-      # Required: Change this to a secure random string!
-      - JWT_SECRET=${JWT_SECRET:-change-this-secret-key}
+      # ===========================================
+      # REQUIRED: Change this to a secure secret!
+      # ===========================================
+      - JWT_SECRET=${JWT_SECRET:-please-change-this-secret-key}
       
-      # Optional: Email invitations
+      # ===========================================
+      # OPTIONAL: Email Configuration (SMTP)
+      # Uncomment to enable email invitations
+      # ===========================================
       # - SMTP_HOST=smtp.gmail.com
       # - SMTP_PORT=587
       # - SMTP_USER=your-email@gmail.com
       # - SMTP_PASSWORD=your-app-password
       # - SMTP_FROM=Family Hub <noreply@familyhub.local>
       
-      # Optional: Google Calendar sync
+      # ===========================================
+      # OPTIONAL: Google Calendar Integration
+      # Set up at: https://console.cloud.google.com
+      # ===========================================
       # - GOOGLE_CLIENT_ID=your-client-id
       # - GOOGLE_CLIENT_SECRET=your-client-secret
       # - GOOGLE_REDIRECT_URI=https://your-domain.com/api/calendar/google/callback
+      
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
@@ -41,5 +57,3 @@ services:
 volumes:
   family-hub-data:
     name: family-hub-data
-  family-hub-photos:
-    name: family-hub-photos
