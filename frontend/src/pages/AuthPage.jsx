@@ -67,8 +67,13 @@ const AuthPage = () => {
     }
     setLoading(true);
     try {
-      await pinLogin(pin);
-      toast.success('Welcome to your Family Hub!');
+      if (pinType === 'family') {
+        await pinLogin(pin);
+        toast.success('Welcome to your Family Hub!');
+      } else {
+        await userPinLogin(pin);
+        toast.success('Welcome back!');
+      }
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Invalid PIN');
     }
