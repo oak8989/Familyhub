@@ -1,140 +1,87 @@
-# Family Hub App - PRD
+# Family Hub - Product Requirements Document
 
-## Original Problem Statement
-Build a family app with: shared calendar, shopping list, task list, shared notes, messages, budget tracker, meal planner, recipe box, quick grocery list, contact book, shared photo gallery, pantry tracker/inventory with barcode reader, meal suggestions based on pantry inventory. Both web and mobile access. Easy to use, clean, kid friendly, selfhosted.
+## Overview
+Family Hub is a fully self-contained, self-hosted family organization app with role-based access control. It runs as a single Docker container with MongoDB embedded.
 
-## User Choices
-- Browser-based camera scanning for barcode reader
-- Simple rule-based meal suggestions (no AI)
-- Local server storage for photos
-- Warm & cozy design with earth tones
-- Both PIN code and individual JWT authentication
-- SMTP email for invitations
-- Google Calendar sync (Emergent-managed Google Auth)
-- Full admin customization (modules, permissions, themes)
+## Original Requirements
+- Shared Calendar, Shopping List, Task List, Notes, Budget Tracker
+- Meal Planner, Recipe Box, Grocery List, Contact Book
+- Pantry Tracker with barcode scanner, Meal Suggestions
+- Gamified Chore Chart with rewards
+- User roles: Owner, Parent, Family Member, Child
+- Auto-generated PINs for quick access
+- Self-hostable with Docker
+- Mobile-friendly (PWA)
 
-## Architecture
-- **Frontend**: React with Tailwind CSS, Shadcn UI, Recharts
-- **Backend**: FastAPI with MongoDB
-- **Design**: Warm earth tones (Terracotta, Sage, Cream, Sunny)
-- **Fonts**: Nunito (headings), DM Sans (body), Caveat (accents)
-- **Deployment**: Docker + Docker Compose
-- **CI/CD**: GitHub Actions
+## Implemented Features
 
-## What's Been Implemented
+### Authentication & User Management
+- [x] Email/password registration and login
+- [x] Family PIN login (6 digits, auto-generated)
+- [x] Personal PIN login (4 digits, auto-generated)
+- [x] Role-based permissions (Owner > Parent > Member > Child)
+- [x] Add family members without email (just name + role)
+- [x] Invite by email (requires SMTP configuration)
 
-### Core Features (Complete)
-1. **Authentication** - JWT login/register + Family PIN (6-digit, auto-generated) + Personal PIN (4-digit)
-2. **Dashboard** - Bento grid with quick stats and module access
-3. **Calendar** - Create, edit, delete events with color coding + Google Calendar sync
-4. **Shopping List** - Categorized items with check/uncheck
-5. **Tasks** - Priority levels, **assignable to family members**, due dates
-6. **Notes** - Color-coded sticky notes
-7. **Budget** - Income/expense tracking with **Recharts visualization** (pie charts, bar charts, area charts)
-8. **Meal Planner** - Weekly view, drag meals to days
-9. **Recipe Box** - Full CRUD with ingredients/instructions
-10. **Grocery List** - Quick simplified shopping list
-11. **Contacts** - Address book with phone/email/address
-12. **Pantry Tracker** - Barcode scanner, expiry tracking
-13. **Meal Suggestions** - Rule-based matching recipes to pantry
-14. **Chores & Rewards** - **Gamified chore chart** with points, leaderboard, and claimable rewards
+### Core Modules
+- [x] Calendar with event management
+- [x] Shopping List with categories
+- [x] Tasks with assignment to family members
+- [x] Notes with color coding
+- [x] Budget with income/expense tracking and Recharts visualization
+- [x] Meal Planner
+- [x] Recipe Box
+- [x] Grocery List
+- [x] Contacts
+- [x] Pantry with barcode scanner
+- [x] Meal Suggestions based on pantry
 
-### Admin Features (Complete)
-- **Settings Page** with tabs for Family, Modules, Integrations, Server
-- **Add Family Member** - Simple form with name + role, auto-generates PIN
-- **User Roles** - Owner, Parent, Family Member, Child with different permissions
-- **Auto-generated PINs**:
-  - Family PIN: 6 digits (shared for quick family access)
-  - Personal PIN: 4 digits (individual user login)
-- **Module Enable/Disable** - Admins can hide modules from certain roles
-- **Role-based Visibility** - Control which roles can see which modules
-- **Family Name Changeable** - Admins can update family name
-- **PIN Regeneration** - Regenerate family or individual PINs anytime
-- **Google Calendar Sync** - Connect and sync events to Google Calendar
+### Gamification
+- [x] Chores with difficulty levels (Easy/Medium/Hard)
+- [x] Points awarded on chore completion
+- [x] Rewards system with point redemption
+- [x] Family leaderboard
 
-### Self-Hosting (Complete)
-- **Fully Self-Contained Docker Image** with MongoDB embedded
-- **Single command deployment**: `docker run -p 8001:8001 ghcr.io/oak8989/family-hub`
-- **Data Persistence** via Docker volumes
-- **Health Check** endpoint for container orchestration
+### Admin Features
+- [x] Settings page with tabs (Family, Modules, Integrations, Server)
+- [x] Module enable/disable per role
+- [x] Family name editing
+- [x] PIN regeneration
+- [x] Google Calendar sync (optional)
 
-## Configuration Required
+### Removed Features
+- [x] Photo Gallery (removed per user request)
+- [x] Messaging (removed per user request)
 
-### SMTP Email (for invitations)
-```env
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-SMTP_FROM=Family Hub <noreply@familyhub.local>
-```
+## Technical Stack
+- **Frontend:** React 18, Tailwind CSS, Shadcn UI, Recharts
+- **Backend:** FastAPI, Python 3.11
+- **Database:** MongoDB 7.0 (embedded in Docker)
+- **Process Manager:** Supervisor
+- **Container:** Single self-contained Docker image
 
-### Google Calendar (optional)
-```env
-GOOGLE_CLIENT_ID=your-client-id
-GOOGLE_CLIENT_SECRET=your-client-secret
-GOOGLE_REDIRECT_URI=https://your-domain.com/api/calendar/google/callback
-```
+## Permission Matrix
 
-## User Roles & Permissions
+| Action | Owner | Parent | Member | Child |
+|--------|:-----:|:------:|:------:|:-----:|
+| View all modules | ✅ | ✅ | ✅ | ✅* |
+| Add/edit content | ✅ | ✅ | ✅ | ❌ |
+| Add family members | ✅ | ✅ | ❌ | ❌ |
+| Change settings | ✅ | ✅ | ❌ | ❌ |
+| Server configuration | ✅ | ❌ | ❌ | ❌ |
 
-| Role | Level | Manage Family | Manage Users | Manage Settings |
-|------|-------|---------------|--------------|-----------------|
-| Owner | 4 | ✅ | ✅ | ✅ |
-| Parent | 3 | ❌ | ✅ | ✅ |
-| Family Member | 2 | ❌ | ❌ | ❌ |
-| Child | 1 | ❌ | ❌ | ❌ |
+*Module visibility configurable by admins
 
-## API Endpoints
+## Deployment
+- Single Docker command: `docker run -p 8001:8001 ghcr.io/oak8989/family-hub`
+- Docker Compose available for production
+- Health check endpoint: `/api/health`
+- Data persisted in `/data/db` volume
 
-### Auth
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login with email/password
-- `POST /api/auth/pin-login` - Login with family PIN
-- `POST /api/auth/user-pin-login` - Login with user PIN
-
-### Family Management
-- `POST /api/family/create` - Create family (auto-generates PIN)
-- `PUT /api/family` - Update family name
-- `POST /api/family/regenerate-pin` - Generate new family PIN
-- `POST /api/family/invite` - Invite member by email
-- `PUT /api/family/members/{id}/role` - Change member role
-- `DELETE /api/family/members/{id}` - Remove member
-
-### Settings
-- `GET /api/settings` - Get family settings
-- `PUT /api/settings` - Update modules/permissions/theme
-
-### Chores & Rewards
-- `GET /api/chores` - List chores
-- `POST /api/chores` - Create chore
-- `POST /api/chores/{id}/complete` - Mark complete (awards points)
-- `GET /api/rewards` - List rewards
-- `POST /api/rewards/claim` - Claim reward (spends points)
-- `GET /api/leaderboard` - Family points leaderboard
-
-### Google Calendar
-- `GET /api/calendar/google/auth` - Get OAuth URL
-- `GET /api/calendar/google/callback` - OAuth callback
-- `POST /api/calendar/google/sync` - Sync events to Google
-- `DELETE /api/calendar/google/disconnect` - Disconnect Google
-
-## Backlog
-
-### P0 (Critical)
-- None remaining
-
-### P1 (Important)
-- Real-time WebSocket for updates
-- Push notifications
-- Data export/backup
-
-### P2 (Nice to Have)
-- QR code for mobile server configuration
-- Recipe import from URL
-- Dark mode toggle
-- Recurring chores automation
-
-## GitHub Repository
-- Username: oak8989
-- Docker image: ghcr.io/oak8989/family-hub
+## Future Enhancements (Backlog)
+- [ ] Real-time WebSocket updates
+- [ ] Push notifications
+- [ ] Data export/backup UI
+- [ ] Recurring chores automation
+- [ ] Dark mode
+- [ ] Recipe import from URL
