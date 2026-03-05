@@ -2,93 +2,97 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Docker-Ready-blue?logo=docker" alt="Docker Ready">
-  <img src="https://img.shields.io/badge/Self--Hosted-Yes-green" alt="Self-Hosted">
+  <img src="https://img.shields.io/badge/Self--Contained-Yes-green" alt="Self-Contained">
   <img src="https://img.shields.io/badge/License-MIT-yellow" alt="MIT License">
 </p>
 
 <p align="center">
   <strong>🏠 Your Family's Digital Home</strong><br>
-  A comprehensive, self-hosted family organization app
+  A fully self-contained, self-hosted family organization app
 </p>
 
 ---
-
-## 📥 Get Started
-
-| Platform | How to Access |
-|----------|---------------|
-| 🌐 **Web** | [Self-host with Docker](#-quick-start) |
-| 📱 **Mobile** | Add to Home Screen (PWA) |
 
 ## ✨ Features
 
 | Feature | Description |
 |---------|-------------|
-| 📅 **Calendar** | Shared family events with color coding |
+| 📅 **Calendar** | Shared family events with Google Calendar sync |
 | 🛒 **Shopping List** | Collaborative lists with categories |
-| ✅ **Tasks** | Assign chores with priorities & due dates |
+| ✅ **Tasks** | Assignable tasks with priorities & due dates |
+| 🏆 **Chores & Rewards** | Gamified chore chart with points system |
 | 📝 **Notes** | Color-coded family notes |
-| 💬 **Messages** | Family chat |
-| 💰 **Budget** | Track income & expenses |
+| 💰 **Budget** | Track income & expenses with charts |
 | 🍽️ **Meal Planner** | Plan weekly meals |
 | 📖 **Recipe Box** | Store & organize recipes |
 | 🥬 **Grocery List** | Quick shopping list |
 | 👥 **Contacts** | Family address book |
-| 📷 **Photos** | Shared photo gallery |
 | 📦 **Pantry** | Inventory with barcode scanner |
 | 💡 **Meal Ideas** | Suggestions based on pantry |
+| ⚙️ **Settings** | Full admin control panel |
 
 ## 🚀 Quick Start
 
-### Option 1: Docker Compose (Recommended)
+### Single Container (Fully Self-Contained)
+
+Everything runs in ONE container - no external database needed!
 
 ```bash
-# Clone the repository
-git clone https://github.com/oak8989/family-hub.git
-cd family-hub
-
-# Configure environment
-cp .env.example .env
-nano .env  # Edit JWT_SECRET
-
-# Start the application
-docker-compose up -d
+# Pull and run (MongoDB included!)
+docker run -d \
+  --name family-hub \
+  -p 8001:8001 \
+  -v family-hub-data:/data/db \
+  -v family-hub-photos:/app/backend/photos \
+  -e JWT_SECRET=your-secret-key-change-me \
+  ghcr.io/oak8989/family-hub:latest
 
 # Access at http://localhost:8001
 ```
 
-### Option 2: Pull from GitHub Container Registry
+### With Docker Compose
 
-```bash
-# Create docker-compose.yml
-cat > docker-compose.yml << 'EOF'
+```yaml
 version: '3.8'
 services:
   family-hub:
     image: ghcr.io/oak8989/family-hub:latest
+    container_name: family-hub
     ports:
       - "8001:8001"
-    environment:
-      - MONGO_URL=mongodb://mongo:27017
-      - DB_NAME=family_hub
-      - JWT_SECRET=your-secret-key-here
-    depends_on:
-      - mongo
-  mongo:
-    image: mongo:7
     volumes:
-      - mongo-data:/data/db
-volumes:
-  mongo-data:
-EOF
+      - family-hub-data:/data/db
+      - family-hub-photos:/app/backend/photos
+    environment:
+      - JWT_SECRET=your-secret-key-change-me
+      # Optional SMTP for email invitations:
+      # - SMTP_HOST=smtp.gmail.com
+      # - SMTP_PORT=587
+      # - SMTP_USER=your-email@gmail.com
+      # - SMTP_PASSWORD=your-app-password
+    restart: unless-stopped
 
-# Start
+volumes:
+  family-hub-data:
+  family-hub-photos:
+```
+
+```bash
 docker-compose up -d
+```
+
+### Build from Source
+
+```bash
+git clone https://github.com/oak8989/family-hub.git
+cd family-hub
+docker build -t family-hub .
+docker run -d -p 8001:8001 -e JWT_SECRET=mysecret family-hub
 ```
 
 ## 📱 Mobile Setup
 
-Family Hub works great on mobile devices:
+Family Hub works great on mobile devices as a PWA:
 
 ### Add to Home Screen
 
@@ -100,148 +104,84 @@ Family Hub works great on mobile devices:
 **Android Chrome:**
 1. Open Family Hub URL
 2. Tap menu (⋮)
-3. Select "Add to Home screen"
+3. Select "Add to Home Screen"
 
 ### Connect to Self-Hosted Server
 
-1. Open the app
-2. Tap **"Self-Hosted Server"** on login screen
-3. Enter your server URL (e.g., `https://family.yourdomain.com`)
-4. Tap **"Test Connection"**
-5. Save and login
+On the login page, tap "Connect to Server" to enter your server URL.
 
-## 🔐 Authentication
+## 👥 User Roles
 
-Family Hub supports two authentication methods:
-
-| Method | Best For |
-|--------|----------|
-| **Family PIN** | Quick access for all family members |
-| **Individual Account** | Personal login with email/password |
-
-### First-Time Setup
-
-1. Go to **Account** tab → Register
-2. Create your account
-3. After login, create a Family
-4. Set a **Family PIN** (e.g., `1234`)
-5. Share the PIN with family members
-
-## 🌐 Production Deployment
-
-### With Traefik (HTTPS)
-
-```bash
-# Configure environment
-cp .env.example .env
-nano .env
-
-# Set these values:
-# JWT_SECRET=your-random-secret
-# DOMAIN=family.yourdomain.com
-# ACME_EMAIL=your@email.com
-
-# Deploy with HTTPS
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-### With Nginx
-
-```nginx
-server {
-    listen 80;
-    server_name family.yourdomain.com;
-    return 301 https://$server_name$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name family.yourdomain.com;
-
-    ssl_certificate /path/to/cert.pem;
-    ssl_certificate_key /path/to/key.pem;
-
-    location / {
-        proxy_pass http://localhost:8001;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        client_max_body_size 50M;
-    }
-}
-```
+| Role | Permissions |
+|------|-------------|
+| **Owner** | Full control - manage family, users, settings |
+| **Parent** | Manage users, settings, all features |
+| **Member** | Use all features, limited editing |
+| **Child** | View-only, complete assigned chores |
 
 ## 🔧 Configuration
 
+### Environment Variables
+
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `JWT_SECRET` | Secret for JWT tokens | *Required* |
-| `MONGO_URL` | MongoDB connection URL | `mongodb://mongo:27017` |
-| `DB_NAME` | Database name | `family_hub` |
-| `PORT` | Application port | `8001` |
+| `JWT_SECRET` | **Required** - Secret key for tokens | - |
+| `DB_NAME` | MongoDB database name | `family_hub` |
 | `CORS_ORIGINS` | Allowed origins | `*` |
 
-## 💾 Backup & Restore
+### Optional: Email Invitations (SMTP)
 
-### Backup
+| Variable | Description |
+|----------|-------------|
+| `SMTP_HOST` | SMTP server (e.g., smtp.gmail.com) |
+| `SMTP_PORT` | SMTP port (usually 587) |
+| `SMTP_USER` | SMTP username/email |
+| `SMTP_PASSWORD` | SMTP password or app password |
+| `SMTP_FROM` | From address for emails |
 
+### Optional: Google Calendar Sync
+
+| Variable | Description |
+|----------|-------------|
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+| `GOOGLE_REDIRECT_URI` | OAuth callback URL |
+
+## 📂 Data Persistence
+
+The container uses two volumes:
+
+- `/data/db` - MongoDB database files
+- `/app/backend/photos` - Uploaded photos (if photo feature is re-enabled)
+
+**Backup your data:**
 ```bash
-# Backup MongoDB
-docker exec family-hub-mongo mongodump --out /data/backup
-docker cp family-hub-mongo:/data/backup ./backup-$(date +%Y%m%d)
+# Backup
+docker run --rm -v family-hub-data:/data -v $(pwd):/backup alpine tar czf /backup/family-hub-backup.tar.gz /data
 
-# Backup photos
-docker cp family-hub:/app/backend/photos ./photos-backup-$(date +%Y%m%d)
+# Restore
+docker run --rm -v family-hub-data:/data -v $(pwd):/backup alpine tar xzf /backup/family-hub-backup.tar.gz -C /
 ```
 
-### Restore
+## 🏥 Health Check
+
+The container includes a health check:
 
 ```bash
-# Restore MongoDB
-docker cp ./backup-20240101 family-hub-mongo:/data/backup
-docker exec family-hub-mongo mongorestore /data/backup
-
-# Restore photos
-docker cp ./photos-backup-20240101/. family-hub:/app/backend/photos/
+curl http://localhost:8001/api/health
+# Returns: {"status":"healthy"}
 ```
-
-## 🛠️ Development
-
-```bash
-# Clone repository
-git clone https://github.com/oak8989/family-hub.git
-cd family-hub
-
-# Backend
-cd backend
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-uvicorn server:app --reload --port 8001
-
-# Frontend (new terminal)
-cd frontend
-yarn install
-yarn start
-```
-
-## 📄 License
-
-MIT License - feel free to use, modify, and distribute!
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## 📄 License
+
+MIT License - See [LICENSE](LICENSE) for details.
 
 ---
 
