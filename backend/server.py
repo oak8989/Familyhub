@@ -529,8 +529,8 @@ async def quick_add_member(member: QuickAddMember, user: dict = Depends(get_curr
 
 @api_router.put("/family/members/{member_id}/role")
 async def update_member_role(member_id: str, role_update: UserRoleUpdate, user: dict = Depends(get_current_user)):
-    user_data = await db.users.find_one({"id": user["user_id"]}, {"_id": 0})
-    if user_data.get("role") not in ["owner", "parent"]:
+    user_role = await get_user_role(user)
+    if user_role not in ["owner", "parent"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
     if role_update.role not in ROLES:
@@ -540,7 +540,7 @@ async def update_member_role(member_id: str, role_update: UserRoleUpdate, user: 
     if not target_user:
         raise HTTPException(status_code=404, detail="Member not found")
     
-    if target_user.get("role") == "owner" and user_data.get("role") != "owner":
+    if target_user.get("role") == "owner" and user_role != "owner":
         raise HTTPException(status_code=403, detail="Cannot change owner role")
     
     await db.users.update_one({"id": member_id}, {"$set": {"role": role_update.role}})
