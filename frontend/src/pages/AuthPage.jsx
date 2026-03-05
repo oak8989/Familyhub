@@ -8,8 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { setCustomServer, getCustomServer, testServerConnection } from '../lib/api';
 
 const AuthPage = () => {
-  const { login, pinLogin, register, createFamily } = useAuth();
+  const { login, pinLogin, userPinLogin, register, createFamily } = useAuth();
   const [mode, setMode] = useState('pin'); // pin, login, register, setup, server
+  const [pinType, setPinType] = useState('family'); // family or personal
   const [loading, setLoading] = useState(false);
   
   // Form states
