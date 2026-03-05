@@ -13,8 +13,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import { 
-  Settings, Users, Shield, Palette, Calendar, UserPlus, Trash2, 
-  RefreshCw, Mail, Server, Check, X, Crown, Eye, EyeOff, Copy
+  Settings, Users, Shield, Calendar, UserPlus, Trash2, 
+  RefreshCw, Server, Check, X, Crown, Eye, EyeOff, Copy, Key
 } from 'lucide-react';
 import api from '../lib/api';
 
@@ -48,15 +48,16 @@ const MODULE_NAMES = {
 };
 
 const SettingsPage = () => {
-  const { user, family, loadFamily } = useAuth();
+  const { user, family, loadFamily, refreshUser } = useAuth();
   const [searchParams] = useSearchParams();
   const [members, setMembers] = useState([]);
   const [settings, setSettings] = useState(null);
   const [familyName, setFamilyName] = useState('');
   const [familyPin, setFamilyPin] = useState('');
   const [showPin, setShowPin] = useState(false);
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteData, setInviteData] = useState({ name: '', email: '', role: 'member' });
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [newMember, setNewMember] = useState({ name: '', role: 'member' });
+  const [newMemberResult, setNewMemberResult] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const isAdmin = user?.role === 'owner' || user?.role === 'parent';
@@ -107,26 +108,31 @@ const SettingsPage = () => {
     try {
       const res = await api.post('/api/family/regenerate-pin');
       setFamilyPin(res.data.pin);
-      toast.success('Family PIN regenerated');
+      toast.success(`New Family PIN: ${res.data.pin}`);
     } catch (error) {
       toast.error('Failed to regenerate PIN');
     }
   };
 
-  const handleInviteMember = async () => {
-    if (!inviteData.name || !inviteData.email) {
-      toast.error('Please fill in all fields');
+  const handleAddMember = async () => {
+    if (!newMember.name.trim()) {
+      toast.error('Please enter a name');
       return;
     }
     try {
-      const res = await api.post('/api/family/invite', inviteData);
-      toast.success(`Invitation sent! User PIN: ${res.data.user_pin}`);
-      setInviteOpen(false);
-      setInviteData({ name: '', email: '', role: 'member' });
+      const res = await api.post('/api/family/add-member', newMember);
+      setNewMemberResult(res.data);
+      toast.success(`${newMember.name} added to family!`);
       loadData();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to invite member');
+      toast.error(error.response?.data?.detail || 'Failed to add member');
     }
+  };
+
+  const handleCloseAddMember = () => {
+    setAddMemberOpen(false);
+    setNewMember({ name: '', role: 'member' });
+    setNewMemberResult(null);
   };
 
   const handleUpdateRole = async (memberId, newRole) => {
@@ -150,11 +156,10 @@ const SettingsPage = () => {
     }
   };
 
-  const handleRegenerateUserPin = async (memberId) => {
+  const handleRegenerateUserPin = async (memberId, memberName) => {
     try {
       const res = await api.post(`/api/family/members/${memberId}/regenerate-pin`);
-      toast.success(`New PIN: ${res.data.pin}`);
-      loadData();
+      toast.success(`New PIN for ${memberName}: ${res.data.pin}`, { duration: 10000 });
     } catch (error) {
       toast.error('Failed to regenerate PIN');
     }
@@ -206,7 +211,7 @@ const SettingsPage = () => {
     try {
       await api.delete('/api/calendar/google/disconnect');
       toast.success('Google Calendar disconnected');
-      loadData();
+      refreshUser();
     } catch (error) {
       toast.error('Failed to disconnect');
     }
@@ -268,11 +273,11 @@ const SettingsPage = () => {
 
         {/* Family Tab */}
         <TabsContent value="family" className="space-y-4">
-          {/* Family Info */}
+          {/* Family Info Card */}
           <Card className="card-base">
             <CardHeader>
               <CardTitle className="text-navy">Family Information</CardTitle>
-              <CardDescription>Manage your family details</CardDescription>
+              <CardDescription>Your family PIN allows quick access for all members</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
@@ -293,13 +298,16 @@ const SettingsPage = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Family PIN</Label>
+                  <Label className="flex items-center gap-2">
+                    <Key className="w-4 h-4" /> Family PIN (Auto-Generated)
+                  </Label>
                   <div className="flex gap-2">
                     <div className="relative flex-1">
                       <Input
                         type={showPin ? 'text' : 'password'}
                         value={familyPin}
                         readOnly
+                        className="font-mono text-lg tracking-widest"
                         data-testid="family-pin-input"
                       />
                       <button
@@ -318,146 +326,172 @@ const SettingsPage = () => {
                       </button>
                     </div>
                     {isAdmin && (
-                      <Button variant="outline" onClick={handleRegenerateFamilyPin} data-testid="regenerate-pin-btn">
+                      <Button variant="outline" onClick={handleRegenerateFamilyPin} title="Generate New PIN" data-testid="regenerate-pin-btn">
                         <RefreshCw className="w-4 h-4" />
                       </Button>
                     )}
                   </div>
+                  <p className="text-xs text-navy-light">Share this PIN with family members for quick login</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Members */}
+          {/* Members Card */}
           <Card className="card-base">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-navy">Family Members</CardTitle>
-                <CardDescription>Manage who has access</CardDescription>
+                <CardDescription>Add and manage family members</CardDescription>
               </div>
               {isAdmin && (
-                <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+                <Dialog open={addMemberOpen} onOpenChange={(open) => { if (!open) handleCloseAddMember(); else setAddMemberOpen(true); }}>
                   <DialogTrigger asChild>
-                    <Button data-testid="invite-member-btn">
-                      <UserPlus className="w-4 h-4 mr-2" /> Invite Member
+                    <Button className="bg-sage hover:bg-sage/90" data-testid="add-member-btn">
+                      <UserPlus className="w-4 h-4 mr-2" /> Add Member
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Invite Family Member</DialogTitle>
+                      <DialogTitle>Add Family Member</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4 pt-4">
-                      <div className="space-y-2">
-                        <Label>Name</Label>
-                        <Input
-                          value={inviteData.name}
-                          onChange={(e) => setInviteData({ ...inviteData, name: e.target.value })}
-                          placeholder="John Doe"
-                          data-testid="invite-name-input"
-                        />
+                    {newMemberResult ? (
+                      <div className="space-y-4 pt-4">
+                        <div className="text-center p-4 bg-green-50 rounded-xl">
+                          <Check className="w-12 h-12 text-green-500 mx-auto mb-2" />
+                          <h3 className="font-bold text-navy text-lg">{newMemberResult.name} Added!</h3>
+                          <p className="text-navy-light">Share their PIN so they can login</p>
+                        </div>
+                        <div className="p-4 bg-cream rounded-xl">
+                          <Label className="text-sm text-navy-light">Login PIN</Label>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-3xl font-mono font-bold text-navy tracking-widest">{newMemberResult.user_pin}</span>
+                            <Button variant="ghost" size="icon" onClick={() => copyToClipboard(newMemberResult.user_pin)}>
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <p className="text-sm text-navy-light text-center">
+                          {newMemberResult.name} can use this PIN on the login screen to access Family Hub
+                        </p>
+                        <Button onClick={handleCloseAddMember} className="w-full">Done</Button>
                       </div>
-                      <div className="space-y-2">
-                        <Label>Email</Label>
-                        <Input
-                          type="email"
-                          value={inviteData.email}
-                          onChange={(e) => setInviteData({ ...inviteData, email: e.target.value })}
-                          placeholder="john@example.com"
-                          data-testid="invite-email-input"
-                        />
+                    ) : (
+                      <div className="space-y-4 pt-4">
+                        <div className="space-y-2">
+                          <Label>Name</Label>
+                          <Input
+                            value={newMember.name}
+                            onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
+                            placeholder="Enter name"
+                            data-testid="new-member-name-input"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Role</Label>
+                          <Select
+                            value={newMember.role}
+                            onValueChange={(value) => setNewMember({ ...newMember, role: value })}
+                          >
+                            <SelectTrigger data-testid="new-member-role-select">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="parent">Parent (Can manage family)</SelectItem>
+                              <SelectItem value="member">Family Member</SelectItem>
+                              <SelectItem value="child">Child (Limited access)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button onClick={handleAddMember} className="w-full bg-sage hover:bg-sage/90" data-testid="confirm-add-member-btn">
+                          <UserPlus className="w-4 h-4 mr-2" /> Add to Family
+                        </Button>
+                        <p className="text-xs text-navy-light text-center">
+                          A unique PIN will be auto-generated for this member
+                        </p>
                       </div>
-                      <div className="space-y-2">
-                        <Label>Role</Label>
-                        <Select
-                          value={inviteData.role}
-                          onValueChange={(value) => setInviteData({ ...inviteData, role: value })}
-                        >
-                          <SelectTrigger data-testid="invite-role-select">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="parent">Parent</SelectItem>
-                            <SelectItem value="member">Family Member</SelectItem>
-                            <SelectItem value="child">Child</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <Button onClick={handleInviteMember} className="w-full" data-testid="send-invite-btn">
-                        <Mail className="w-4 h-4 mr-2" /> Send Invitation
-                      </Button>
-                    </div>
+                    )}
                   </DialogContent>
                 </Dialog>
               )}
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {members.map((member) => (
-                  <div
-                    key={member.id}
-                    className="flex items-center justify-between p-3 bg-cream rounded-xl"
-                    data-testid={`member-${member.id}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Avatar className="w-10 h-10">
-                        <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${member.avatar_seed}`} />
-                        <AvatarFallback>{member.name?.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-navy">{member.name}</span>
-                          {member.role === 'owner' && <Crown className="w-4 h-4 text-amber-500" />}
+                {members.length === 0 ? (
+                  <p className="text-center py-8 text-navy-light">No family members yet. Add someone!</p>
+                ) : (
+                  members.map((member) => (
+                    <div
+                      key={member.id}
+                      className="flex items-center justify-between p-3 bg-cream rounded-xl"
+                      data-testid={`member-${member.id}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${member.avatar_seed}`} />
+                          <AvatarFallback>{member.name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-navy">{member.name}</span>
+                            {member.role === 'owner' && <Crown className="w-4 h-4 text-amber-500" />}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {member.email && <span className="text-sm text-navy-light">{member.email}</span>}
+                            {member.user_pin && (
+                              <span className="text-xs text-navy-light font-mono">PIN: {member.user_pin}</span>
+                            )}
+                          </div>
                         </div>
-                        <span className="text-sm text-navy-light">{member.email}</span>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge className={`${ROLE_COLORS[member.role]} text-white`}>
-                        {ROLE_LABELS[member.role]}
-                      </Badge>
-                      {member.points > 0 && (
-                        <Badge variant="outline">{member.points} pts</Badge>
-                      )}
-                      {isAdmin && member.id !== user?.id && member.role !== 'owner' && (
-                        <Select
-                          value={member.role}
-                          onValueChange={(value) => handleUpdateRole(member.id, value)}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="parent">Parent</SelectItem>
-                            <SelectItem value="member">Member</SelectItem>
-                            <SelectItem value="child">Child</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
-                      {isAdmin && member.id !== user?.id && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleRegenerateUserPin(member.id)}
-                            title="Regenerate PIN"
+                      <div className="flex items-center gap-2">
+                        <Badge className={`${ROLE_COLORS[member.role]} text-white`}>
+                          {ROLE_LABELS[member.role]}
+                        </Badge>
+                        {member.points > 0 && (
+                          <Badge variant="outline">{member.points} pts</Badge>
+                        )}
+                        {isAdmin && member.id !== user?.id && member.role !== 'owner' && (
+                          <Select
+                            value={member.role}
+                            onValueChange={(value) => handleUpdateRole(member.id, value)}
                           >
-                            <RefreshCw className="w-4 h-4" />
-                          </Button>
-                          {member.role !== 'owner' && (
+                            <SelectTrigger className="w-28 h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="parent">Parent</SelectItem>
+                              <SelectItem value="member">Member</SelectItem>
+                              <SelectItem value="child">Child</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                        {isAdmin && member.id !== user?.id && (
+                          <>
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleRemoveMember(member.id)}
-                              className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                              onClick={() => handleRegenerateUserPin(member.id, member.name)}
+                              title="Generate New PIN"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <RefreshCw className="w-4 h-4" />
                             </Button>
-                          )}
-                        </>
-                      )}
+                            {member.role !== 'owner' && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleRemoveMember(member.id)}
+                                className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
@@ -551,13 +585,13 @@ const SettingsPage = () => {
             <Card className="card-base">
               <CardHeader>
                 <CardTitle className="text-navy">Server Configuration</CardTitle>
-                <CardDescription>These settings are configured in your server's .env file</CardDescription>
+                <CardDescription>These settings are configured in your server's environment variables</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="p-4 bg-cream rounded-xl">
-                  <h3 className="font-medium text-navy mb-2">SMTP Email Settings</h3>
+                  <h3 className="font-medium text-navy mb-2">SMTP Email Settings (Optional)</h3>
                   <p className="text-sm text-navy-light mb-4">
-                    Configure these in your backend/.env file to enable email invitations:
+                    Configure these to enable email invitations:
                   </p>
                   <pre className="bg-navy text-cream p-3 rounded-lg text-sm overflow-x-auto">
 {`SMTP_HOST=smtp.gmail.com
@@ -568,9 +602,9 @@ SMTP_FROM=Family Hub <noreply@familyhub.local>`}
                   </pre>
                 </div>
                 <div className="p-4 bg-cream rounded-xl">
-                  <h3 className="font-medium text-navy mb-2">Google Calendar Integration</h3>
+                  <h3 className="font-medium text-navy mb-2">Google Calendar (Optional)</h3>
                   <p className="text-sm text-navy-light mb-4">
-                    To enable Google Calendar sync, add these to your backend/.env:
+                    To enable Google Calendar sync:
                   </p>
                   <pre className="bg-navy text-cream p-3 rounded-lg text-sm overflow-x-auto">
 {`GOOGLE_CLIENT_ID=your-client-id
