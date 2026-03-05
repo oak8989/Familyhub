@@ -336,22 +336,52 @@ async def register(user: UserCreate):
         raise HTTPException(status_code=400, detail="Email already registered")
     
     user_pin = generate_user_pin()
+    user_id = str(uuid.uuid4())
+    family_id = None
+    family_pin = None
+    role = "member"
+    
+    # If family_name provided, create a new family and make user the owner
+    if user.family_name:
+        family_pin = generate_pin()
+        family_id = str(uuid.uuid4())
+        family_doc = {
+            "id": family_id,
+            "name": user.family_name,
+            "pin": family_pin,
+            "settings": DEFAULT_FAMILY_SETTINGS,
+            "created_by": user_id,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.families.insert_one(family_doc)
+        role = "owner"
+    
     user_doc = {
-        "id": str(uuid.uuid4()),
+        "id": user_id,
         "name": user.name,
         "email": user.email,
         "password": hash_password(user.password),
-        "role": user.role,
+        "role": role,
         "user_pin": user_pin,
         "avatar_seed": user.avatar_seed or str(uuid.uuid4()),
-        "family_id": None,
+        "family_id": family_id,
         "points": 0,
         "google_tokens": None,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(user_doc)
+    
+    # Create token with correct family_id and role
+    token = create_token(user_id, family_id or "", role)
+    
     response_doc = {k: v for k, v in user_doc.items() if k not in ["password", "_id"]}
-    return {"user": response_doc, "message": "Registration successful", "user_pin": user_pin}
+    return {
+        "user": response_doc, 
+        "token": token,
+        "message": "Registration successful", 
+        "user_pin": user_pin,
+        "family_pin": family_pin
+    }
 
 @api_router.post("/auth/login")
 async def login(credentials: UserLogin):
