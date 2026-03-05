@@ -14,7 +14,7 @@ WORKDIR /app/frontend
 COPY frontend/package.json frontend/yarn.lock* ./
 
 # Install dependencies
-RUN yarn install --network-timeout 300000 --ignore-engines || yarn install --network-timeout 300000
+RUN yarn install --network-timeout 300000 --ignore-engines
 
 # Copy frontend source
 COPY frontend/ ./
@@ -59,7 +59,6 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copy backend code
 COPY backend/server.py ./backend/server.py
-COPY backend/.env.example ./backend/.env.example 2>/dev/null || true
 
 # Copy frontend build from builder stage
 COPY --from=frontend-builder /app/frontend/build ./frontend/build
@@ -74,10 +73,9 @@ RUN mkdir -p /app/backend/photos /app/data \
 # Switch to non-root user
 USER appuser
 
-# Environment variables with defaults
+# Environment variables (non-sensitive defaults only)
 ENV MONGO_URL=mongodb://mongo:27017 \
     DB_NAME=family_hub \
-    JWT_SECRET=change-this-secret-in-production \
     CORS_ORIGINS=* \
     PORT=8001
 
