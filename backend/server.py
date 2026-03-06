@@ -32,6 +32,10 @@ import asyncio
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 FRONTEND_BUILD_DIR = ROOT_DIR.parent / 'frontend' / 'build'
 
 mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
@@ -303,7 +307,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     try:
         payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         return payload
-    except:
+    except Exception:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 def check_permission(user_role: str, required_permission: str) -> bool:
@@ -518,9 +522,13 @@ async def invite_member(invite: UserInvite, user: dict = Depends(get_current_use
     }
     await db.users.insert_one(new_user)
     
+    # Get the inviter's name
+    inviter = await db.users.find_one({"id": user["user_id"]}, {"_id": 0, "name": 1})
+    inviter_name = inviter.get("name", "A family member") if inviter else "A family member"
+    
     email_html = f"""
     <h2>Welcome to {family['name']} on Family Hub!</h2>
-    <p>You've been invited by {user_data['name']} to join the family.</p>
+    <p>You've been invited by {inviter_name} to join the family.</p>
     <p><strong>Your login credentials:</strong></p>
     <ul>
         <li>Email: {invite.email}</li>
@@ -729,14 +737,14 @@ async def google_calendar_callback(code: str, state: str):
     }).json()
     
     if 'error' in token_resp:
-        return RedirectResponse(f"/settings?error=google_auth_failed")
+        return RedirectResponse("/settings?error=google_auth_failed")
     
     await db.users.update_one(
         {"id": state},
         {"$set": {"google_tokens": token_resp}}
     )
     
-    return RedirectResponse(f"/settings?google_connected=true")
+    return RedirectResponse("/settings?google_connected=true")
 
 @api_router.post("/calendar/google/sync")
 async def sync_google_calendar(user: dict = Depends(get_current_user)):
@@ -1280,7 +1288,7 @@ async def lookup_barcode(barcode: str):
                 "brand": product.get("brands", ""),
                 "category": product.get("categories_tags", ["Other"])[0] if product.get("categories_tags") else "Other"
             }
-    except:
+    except Exception:
         pass
     return {"found": False}
 
@@ -1580,9 +1588,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
 
 if FRONTEND_BUILD_DIR.exists():
     static_dir = FRONTEND_BUILD_DIR / "static"
