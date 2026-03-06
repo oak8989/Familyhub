@@ -63,7 +63,7 @@ ENV PATH="/app/venv/bin:$PATH"
 # Install Python dependencies
 COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy backend code
 COPY backend/server.py ./backend/server.py

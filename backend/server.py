@@ -1311,6 +1311,14 @@ async def get_meal_suggestions(user: dict = Depends(get_current_user)):
 
 # ============== AI-POWERED MEAL SUGGESTIONS ==============
 
+# Check if emergentintegrations is available (optional dependency)
+try:
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    EMERGENT_AVAILABLE = True
+except ImportError:
+    EMERGENT_AVAILABLE = False
+    logger.info("emergentintegrations not available - AI features disabled")
+
 class AIMealSuggestionRequest(BaseModel):
     use_ai: bool = True
 
@@ -1324,12 +1332,13 @@ async def get_ai_meal_suggestions(request: AIMealSuggestionRequest, user: dict =
     
     pantry_names = [f"{p['name']} ({p.get('quantity', 1)} {p.get('unit', 'pcs')})" for p in pantry_items]
     
+    if not EMERGENT_AVAILABLE:
+        return {"suggestions": [], "message": "AI features not available in self-hosted mode. Use recipe matching instead!"}
+    
     if not EMERGENT_LLM_KEY:
-        return {"suggestions": [], "message": "AI features not configured. Please add EMERGENT_LLM_KEY."}
+        return {"suggestions": [], "message": "AI features not configured. Please add EMERGENT_LLM_KEY environment variable."}
     
     try:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
-        
         chat = LlmChat(
             api_key=EMERGENT_LLM_KEY,
             session_id=f"meal-suggestion-{user['family_id']}-{uuid.uuid4()}",
