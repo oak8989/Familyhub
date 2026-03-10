@@ -1,121 +1,85 @@
 # Family Hub - Product Requirements Document
 
 ## Overview
-Family Hub is a fully self-contained, self-hosted family organization app with role-based access control. It runs as a single Docker container with MongoDB embedded.
+Family Hub is a fully self-contained, self-hosted family organization app with role-based access control. Runs as a single Docker container with MongoDB embedded.
 
-## Latest Update (March 2026)
-- **Backend Refactored**: Monolithic 1652-line server.py split into 16 modular FastAPI router files with separate database.py, auth.py, and models/schemas.py
-- **Admin Portal Fixed**: Replaced broken HTTP Basic Auth with session-based form login accessible via web browsers
-- **Barcode Scanner Enhanced**: Camera-based scanning auto-closes on detection, product lookup uses Open Food Facts + UPC Item DB fallback, shows product image and Google search link for unknown barcodes
-- **Docker Build Fixed**: Removed `emergentintegrations` from requirements.txt (platform-only), updated Dockerfile to copy full modular backend, added sys.path fix for Docker compatibility
-- **Full Regression Test**: 144/144 backend tests passing, all frontend flows verified
+## Latest Update (March 10, 2026)
+- **4 New Features Added**: Real-time WebSocket updates, dark mode, recipe import from URL, offline support (Service Worker)
+- **Backend Refactored**: Monolithic server.py split into 17 modular router files
+- **Admin Portal Fixed**: Session-based form login replacing broken HTTP Basic Auth
+- **Barcode Scanner Enhanced**: Camera auto-close, multi-source lookup, Google fallback
+- **Docker Build Fixed**: Removed platform-only dependencies, full modular backend copy
+- **Testing**: All tests passing (iteration 8: 144/144, iteration 9: 19/19 + full frontend)
 
-## Original Requirements
-- Shared Calendar, Shopping List, Task List, Notes, Budget Tracker
-- Meal Planner, Recipe Box, Grocery List, Contact Book
-- Pantry Tracker with barcode scanner, Meal Suggestions
-- Gamified Chore Chart with rewards
-- User roles: Owner, Parent, Family Member, Child
-- Auto-generated PINs for quick access
-- Self-hostable with Docker
-- Mobile-friendly (PWA)
+## Tech Stack
+- **Frontend:** React 18, Tailwind CSS (with dark mode), Shadcn UI, Recharts, @zxing/library
+- **Backend:** FastAPI (17 modular routers), Python 3.11, BeautifulSoup4
+- **Database:** MongoDB 7.0 (embedded in Docker)
+- **Real-time:** WebSocket via FastAPI
+- **Offline:** Service Worker (cache-first static, network-first API)
+- **AI:** Emergent LLM (GPT-4o-mini) + OpenAI fallback
+- **Admin:** FastAPI with session-based auth (port 8050)
+- **Container:** Single self-contained Docker image
 
 ## Implemented Features
 
-### Authentication & User Management
-- [x] Email/password registration and login
-- [x] Family PIN login (6 digits, auto-generated)
-- [x] Personal PIN login (4 digits, auto-generated)
-- [x] Role-based permissions (Owner > Parent > Member > Child)
-- [x] Add family members without email (just name + role)
-- [x] Invite by email (requires SMTP configuration)
-
-### Core Modules
-- [x] Calendar with event management
+### Core Modules (All with Full CRUD)
+- [x] Shared Calendar (+ Google Calendar sync)
 - [x] Shopping List with categories
-- [x] Tasks with assignment to family members
+- [x] Tasks with assignment
 - [x] Notes with color coding
-- [x] Budget with income/expense tracking and Recharts visualization
+- [x] Budget Tracker with charts
 - [x] Meal Planner
-- [x] Recipe Box
+- [x] Recipe Box (+ URL import)
 - [x] Grocery List
 - [x] Contacts
-- [x] Pantry with barcode scanner (camera + manual entry + web search)
-- [x] Meal Suggestions based on pantry (simple matching + AI-powered)
+- [x] Pantry (barcode scanner + web lookup)
+- [x] AI Meal Suggestions
 
 ### Gamification
-- [x] Chores with difficulty levels (Easy/Medium/Hard)
-- [x] Points awarded on chore completion
-- [x] Rewards system with point redemption
+- [x] Chores with difficulty/points
+- [x] Rewards system
 - [x] Family leaderboard
 
-### Admin Features
-- [x] Settings page with tabs (Family, Modules, Integrations, Mobile, Backup, Server)
-- [x] Module enable/disable per role
-- [x] Family name editing
-- [x] PIN regeneration
-- [x] Google Calendar sync (optional)
-- [x] QR Code generation for mobile device setup
-- [x] Push notifications toggle
-- [x] Data export (Full JSON backup + CSV by module)
-- [x] Admin Portal with session-based login (port 8050)
+### Authentication & User Management
+- [x] Email/password + Family/Personal PIN login
+- [x] Role-based permissions (Owner > Parent > Member > Child)
+- [x] Email invites (SMTP)
 
-### AI Features
-- [x] AI-Powered Meal Suggestions using GPT-4o-mini
-- [x] Emergent LLM key (platform) + OpenAI fallback (self-hosted)
+### Real-time & Offline
+- [x] WebSocket updates - family members see changes instantly
+- [x] Service Worker - app works offline with cached data
+- [x] PWA installable (manifest.json)
 
-### Removed Features
-- [x] Photo Gallery (removed per user request)
-- [x] Messaging (removed per user request)
+### UI/UX
+- [x] Dark mode toggle (persists in localStorage)
+- [x] Mobile-friendly responsive design
+- [x] Admin Portal (session-based login, port 8050)
 
-## Technical Stack
-- **Frontend:** React 18, Tailwind CSS, Shadcn UI, Recharts, @zxing/library
-- **Backend:** FastAPI (modular routers), Python 3.11
-- **Database:** MongoDB 7.0 (embedded in Docker)
-- **AI Integration:** Emergent LLM (GPT-4o-mini) + OpenAI fallback
-- **Admin Portal:** FastAPI with session-based auth (port 8050)
-- **Process Manager:** Supervisor
-- **Container:** Single self-contained Docker image
+### Data Management
+- [x] QR code for mobile setup
+- [x] Full JSON + CSV export
+- [x] Push notification toggle (UI only)
 
-## Code Architecture (Refactored)
+## Code Architecture
 ```
 /app/backend/
-├── server.py           # Slim app init (~80 lines)
+├── server.py           # Slim app init (~95 lines)
 ├── database.py         # MongoDB connection
-├── auth.py             # JWT helpers, roles, permissions, email
+├── auth.py             # JWT, roles, permissions, email
 ├── admin_portal.py     # Admin portal (port 8050)
-├── models/
-│   └── schemas.py      # All Pydantic models
-├── routers/
-│   ├── auth.py         # Registration, login, PIN auth
-│   ├── family.py       # Family CRUD, members, invites
-│   ├── calendar.py     # Calendar + Google Calendar sync
-│   ├── shopping.py     # Shopping list CRUD
-│   ├── tasks.py        # Tasks CRUD
-│   ├── chores.py       # Chores + rewards + leaderboard
-│   ├── notes.py        # Notes CRUD
-│   ├── budget.py       # Budget CRUD + summary
-│   ├── meals.py        # Meal plans CRUD
-│   ├── recipes.py      # Recipes CRUD
-│   ├── grocery.py      # Grocery list CRUD
-│   ├── contacts.py     # Contacts CRUD
-│   ├── pantry.py       # Pantry CRUD + barcode lookup
-│   ├── settings.py     # Family + server settings
-│   ├── suggestions.py  # AI meal suggestions
-│   └── utilities.py    # QR code, export, push notifications
-└── tests/
-    ├── test_family_hub.py
-    ├── test_new_features.py
-    ├── test_comprehensive_crud.py
-    └── test_permissions.py
+├── models/schemas.py   # All Pydantic models
+└── routers/
+    ├── auth.py, family.py, calendar.py, shopping.py
+    ├── tasks.py, chores.py, notes.py, budget.py
+    ├── meals.py, recipes.py, grocery.py, contacts.py
+    ├── pantry.py, settings.py, suggestions.py
+    ├── utilities.py, websocket.py
 ```
 
-## Future Enhancements (Backlog)
-- [ ] Push notification backend logic (Web Push Protocol)
-- [ ] AI Meal Suggestions based on actual pantry inventory
-- [ ] Data import/restore feature
-- [ ] Real-time WebSocket updates
-- [ ] Service worker for offline support
+## Backlog
+- [ ] Push notification backend (Web Push Protocol)
+- [ ] AI Meal Suggestions based on pantry
+- [ ] Data import/restore
 - [ ] Recurring chores automation
-- [ ] Dark mode
-- [ ] Recipe import from URL
+- [ ] Recipe import from URL (expand site coverage)
