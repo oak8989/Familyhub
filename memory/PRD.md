@@ -7,6 +7,7 @@ Family Hub is a fully self-contained, self-hosted family organization app with r
 - **Backend Refactored**: Monolithic 1652-line server.py split into 16 modular FastAPI router files with separate database.py, auth.py, and models/schemas.py
 - **Admin Portal Fixed**: Replaced broken HTTP Basic Auth with session-based form login accessible via web browsers
 - **Barcode Scanner Enhanced**: Camera-based scanning auto-closes on detection, product lookup uses Open Food Facts + UPC Item DB fallback, shows product image and Google search link for unknown barcodes
+- **Docker Build Fixed**: Removed `emergentintegrations` from requirements.txt (platform-only), updated Dockerfile to copy full modular backend, added sys.path fix for Docker compatibility
 - **Full Regression Test**: 144/144 backend tests passing, all frontend flows verified
 
 ## Original Requirements

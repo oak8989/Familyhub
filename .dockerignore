@@ -33,6 +33,8 @@ logs/
 coverage/
 .pytest_cache/
 test_reports/
+backend/tests/
+tests/
 
 # Docker files (don't need to copy themselves)
 Dockerfile*

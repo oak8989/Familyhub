@@ -63,10 +63,11 @@ ENV PATH="/app/venv/bin:$PATH"
 # Install Python dependencies
 COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir openai || true
 
-# Copy backend code
-COPY backend/server.py ./backend/server.py
+# Copy backend code (modular structure)
+COPY backend/ ./backend/
 
 # Copy frontend build
 COPY --from=frontend-builder /app/frontend/build ./frontend/build
