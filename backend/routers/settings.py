@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends
 from models.schemas import FamilySettings
-from auth import get_current_user, get_user_role, DEFAULT_FAMILY_SETTINGS, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_FROM, GOOGLE_CLIENT_ID
+from auth import get_current_user, get_user_role, DEFAULT_FAMILY_SETTINGS, get_smtp_config
 from database import db
+import os
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
@@ -45,11 +46,12 @@ async def get_server_settings(user: dict = Depends(get_current_user)):
     user_role = await get_user_role(user)
     if user_role != "owner":
         raise HTTPException(status_code=403, detail="Only owner can view server settings")
+    smtp = get_smtp_config()
     return {
-        "smtp_configured": bool(SMTP_HOST),
-        "google_configured": bool(GOOGLE_CLIENT_ID),
-        "smtp_host": SMTP_HOST,
-        "smtp_port": SMTP_PORT,
-        "smtp_user": SMTP_USER,
-        "smtp_from": SMTP_FROM,
+        "smtp_configured": bool(smtp['host']),
+        "google_configured": bool(os.environ.get('GOOGLE_CLIENT_ID', '')),
+        "smtp_host": smtp['host'],
+        "smtp_port": smtp['port'],
+        "smtp_user": smtp['user'],
+        "smtp_from": smtp['from_addr'],
     }

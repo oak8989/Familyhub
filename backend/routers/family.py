@@ -3,7 +3,7 @@ from models.schemas import FamilyCreate, FamilyUpdate, UserInvite, UserRoleUpdat
 from auth import (
     get_current_user, get_user_role, check_permission,
     generate_pin, generate_user_pin, hash_password, send_email,
-    ROLES, SMTP_HOST
+    ROLES, get_smtp_config
 )
 from database import db
 from datetime import datetime, timezone
@@ -160,7 +160,8 @@ async def quick_add_member(member: QuickAddMember, user: dict = Depends(get_curr
         "email_sent": False
     }
 
-    if member.email and SMTP_HOST:
+    smtp_host = get_smtp_config()['host']
+    if member.email and smtp_host:
         try:
             family = await db.families.find_one({"id": user["family_id"]}, {"_id": 0})
             inviter = await db.users.find_one({"id": user["user_id"]}, {"_id": 0, "name": 1})
@@ -182,7 +183,7 @@ async def quick_add_member(member: QuickAddMember, user: dict = Depends(get_curr
         except Exception as e:
             logger.error(f"Failed to send invite email: {e}")
             result["email_error"] = "Email could not be sent. Check SMTP configuration."
-    elif member.email and not SMTP_HOST:
+    elif member.email and not smtp_host:
         result["email_error"] = "SMTP not configured. Share the PIN manually."
 
     return result

@@ -21,6 +21,16 @@ SMTP_USER = os.environ.get('SMTP_USER', '')
 SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
 SMTP_FROM = os.environ.get('SMTP_FROM', '')
 
+
+def get_smtp_config():
+    return {
+        'host': os.environ.get('SMTP_HOST', ''),
+        'port': int(os.environ.get('SMTP_PORT', '587')),
+        'user': os.environ.get('SMTP_USER', ''),
+        'password': os.environ.get('SMTP_PASSWORD', ''),
+        'from_addr': os.environ.get('SMTP_FROM', ''),
+    }
+
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
 GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', '')
@@ -106,18 +116,19 @@ async def get_user_role(user: dict) -> str:
     return user_data.get("role", "member")
 
 async def send_email(to_email: str, subject: str, html_content: str):
-    if not all([SMTP_HOST, SMTP_USER, SMTP_PASSWORD]):
+    smtp = get_smtp_config()
+    if not all([smtp['host'], smtp['user'], smtp['password']]):
         logger.warning("SMTP not configured, skipping email")
         return False
     try:
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
-        msg['From'] = SMTP_FROM or SMTP_USER
+        msg['From'] = smtp['from_addr'] or smtp['user']
         msg['To'] = to_email
         msg.attach(MIMEText(html_content, 'html'))
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+        with smtplib.SMTP(smtp['host'], smtp['port']) as server:
             server.starttls()
-            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.login(smtp['user'], smtp['password'])
             server.send_message(msg)
         return True
     except Exception as e:
