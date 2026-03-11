@@ -13,6 +13,21 @@ import logging
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/recipes", tags=["recipes"])
 
+BROWSER_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User': '?1',
+    'Upgrade-Insecure-Requests': '1',
+    'sec-ch-ua': '"Google Chrome";v="131", "Chromium";v="131"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"Windows"',
+}
+
 
 @router.get("", response_model=List[Recipe])
 async def get_recipes(user: dict = Depends(get_current_user)):
@@ -206,24 +221,45 @@ async def import_recipe_from_url(req: ImportURLRequest, user: dict = Depends(get
     if not url.startswith(('http://', 'https://')):
         url = 'https://' + url
 
-    try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
-        }
-        response = requests.get(url, headers=headers, timeout=15, allow_redirects=True)
-        response.raise_for_status()
-    except requests.RequestException as e:
-        raise HTTPException(status_code=400, detail=f"Failed to fetch URL: {str(e)}")
+    html = None
 
-    soup = BeautifulSoup(response.text, 'lxml')
+    # Attempt 1: requests with full browser headers
+    try:
+        session = requests.Session()
+        response = session.get(url, headers=BROWSER_HEADERS, timeout=15, allow_redirects=True)
+        response.raise_for_status()
+        html = response.text
+    except requests.RequestException as e:
+        logger.warning(f"Primary fetch failed for {url}: {e}")
+
+    # Attempt 2: cloudscraper (handles Cloudflare)
+    if html is None:
+        try:
+            import cloudscraper
+            scraper = cloudscraper.create_scraper()
+            response = scraper.get(url, timeout=15)
+            response.raise_for_status()
+            html = response.text
+        except Exception as e:
+            logger.warning(f"Cloudscraper fetch failed for {url}: {e}")
+
+    if html is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Could not fetch this recipe URL. The site may block automated access. Try a different recipe site (BBC Good Food, Food.com, NYT Cooking work well)."
+        )
+
+    soup = BeautifulSoup(html, 'lxml')
     json_ld = extract_json_ld_recipe(soup)
 
     if json_ld:
         recipe_data = parse_recipe_data(json_ld)
     else:
         recipe_data = fallback_scrape(soup, url)
+
+    # If no useful data was extracted, let the user know
+    if not recipe_data.get('ingredients') and not recipe_data.get('instructions'):
+        recipe_data['_warning'] = 'Could not extract recipe details. This site may use JavaScript rendering. You can fill in the details manually.'
 
     recipe_data['source_url'] = url
     return recipe_data
